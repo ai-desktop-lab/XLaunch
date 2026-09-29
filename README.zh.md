@@ -2,7 +2,9 @@
 
 # XLaunch
 
-macOS 原生启动器首版：[C++ / Qt Quick 源码与构建说明](launcher/README.md)。已实现本机应用发现、搜索、启动和琥珀/系统主题；Linux 适配仍在规划中。
+Linux/X11 原生启动器支持 ICEWM：默认进入简约 Menu，可从“全部应用”、Enter 或 F11 切换到全屏 APP Launch；Menu 按钮或 Esc 返回。Linux 通过 freedesktop `.desktop` 文件、系统图标主题和 `gio` 启动本机应用。
+
+macOS 与 Linux/X11 原生启动器：[C++ / Qt Quick 源码与构建说明](launcher/README.md)。macOS 使用 AppKit；Linux 使用 freedesktop 应用目录、系统图标主题和 `gio` 启动，适配 ICEWM 会话。
 
 ## XLaunch · 经典桌面，AI 指令
 

@@ -1,0 +1,23 @@
+Source: xlaunch
+Section: x11
+Priority: optional
+Maintainer: AI Workspace Lab <ai-workspace-lab@users.noreply.github.com>
+Build-Depends:
+ debhelper-compat (= 13),
+ cmake (>= 3.24),
+ qt6-base-dev,
+ qt6-declarative-dev,
+ qt6-tools-dev,
+ libglib2.0-dev
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+Homepage: https://github.com/ai-workspace-lab/XLaunch
+
+Package: xlaunch
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libglib2.0-bin
+Recommends: xdock, icewm, xfce4-terminal, thunar, chromium | firefox-esr
+Description: compact AI Workspace application launcher
+ XLaunch provides a small X11 desktop menu and a full-screen application
+ launcher. On Linux it discovers freedesktop .desktop entries, uses the
+ active icon theme, and starts applications through gio.
