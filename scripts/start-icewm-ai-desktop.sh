@@ -5,7 +5,7 @@ set -euo pipefail
 # services are managed independently by systemd --user.
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 XDOCK_BIN="${XDOCK_BIN:-${ROOT_DIR}/../XDock/build/xdock}"
-XLAUNCH_BIN="${XLAUNCH_BIN:-${ROOT_DIR}/build/launcher/XLaunch}"
+XLAUNCH_BIN="${XLAUNCH_BIN:-${ROOT_DIR}/build/launcher/xlaunch}"
 LOG_DIR="${XDG_STATE_HOME:-${HOME}/.local/state}/xworkspace"
 mkdir -p "${LOG_DIR}"
 
@@ -27,4 +27,4 @@ start_once() {
 }
 
 start_once xdock "${XDOCK_BIN}" "${LOG_DIR}/xdock.log"
-start_once XLaunch "${XLAUNCH_BIN}" "${LOG_DIR}/xlaunch.log"
+start_once xlaunch "${XLAUNCH_BIN}" "${LOG_DIR}/xlaunch.log"

@@ -13,10 +13,14 @@ sudo apt install qt6-base-dev qt6-declarative-dev qt6-tools-dev cmake g++ libgli
 cmake -S launcher -B build/launcher -DCMAKE_BUILD_TYPE=Release
 cmake --build build/launcher --parallel
 QT_QPA_PLATFORM=xcb ctest --test-dir build/launcher --output-on-failure
-QT_QPA_PLATFORM=xcb ./build/launcher/XLaunch
+QT_QPA_PLATFORM=xcb ./build/launcher/xlaunch
 ```
 
 The launcher uses the current X11 desktop session and does not require Wayland or a compositor-specific protocol.
+
+For a headless VPS or container, set `DISPLAY` to an Xvfb display and keep
+`QT_QPA_PLATFORM=xcb`. Xvfb is CPU-rendered and has no GPU requirement; use
+X11VNC/noVNC as a separate display transport when remote access is needed.
 
 The default window is a compact `Menu` mode with category shortcuts. `全部应用` or Enter switches to the full-screen app launcher; the `Menu` button or Esc returns to the compact menu.
 

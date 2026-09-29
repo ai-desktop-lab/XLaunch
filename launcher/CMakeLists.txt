@@ -13,6 +13,11 @@ else()
 endif()
 qt_add_executable(XLaunch MACOSX_BUNDLE src/main.cpp src/catalog.cpp src/catalog.h src/platform.h ${PLATFORM_SOURCE})
 qt_add_qml_module(XLaunch URI XLaunch QML_FILES qml/Main.qml RESOURCES assets/amber-wallpaper.png)
+if(UNIX AND NOT APPLE)
+  # qt_add_qml_module creates a build/launcher/XLaunch directory.  Keep the
+  # Linux binary lowercase so the linker output does not collide with it.
+  set_target_properties(XLaunch PROPERTIES OUTPUT_NAME xlaunch)
+endif()
 target_link_libraries(XLaunch PRIVATE Qt6::Quick Qt6::QuickControls2 Qt6::Network Qt6::Widgets)
 include(GNUInstallDirs)
 install(TARGETS XLaunch RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
