@@ -1,0 +1,5 @@
+xlaunch (0.1.0-1) unstable; urgency=medium
+
+  * Add Linux/X11 launcher support, Menu mode, and Debian packaging.
+
+ -- AI Workspace Lab <ai-workspace-lab@users.noreply.github.com>  Wed, 30 Sep 2026 00:30:00 +0800

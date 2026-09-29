@@ -1,0 +1,3 @@
+XLaunch is intended to run inside an existing X11 session. For the bundled
+ICEWM desktop, use scripts/start-icewm-ai-desktop.sh; it starts XLaunch in
+compact Menu mode and starts XDock alongside it.

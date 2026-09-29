@@ -1,12 +1,28 @@
-# XLaunch native launcher — macOS first
+# XLaunch native launcher — macOS and Linux/X11
 
-Qt 6.8+ / Qt Quick / C++17. macOS app discovery and activation use AppKit; the UI and filtering model are portable. Linux adapter is an explicit stub, not advertised as implemented support.
+Qt 6.8+ / Qt Quick / C++17. macOS app discovery and activation use AppKit. Linux/X11 discovery reads freedesktop `.desktop` entries, loads the active icon theme, and launches apps through `gio`; the UI and filtering model are portable.
 
 The user's selected stack for both XLaunch and XDock is C++ + Qt Quick/QML. The current console under `dashboard/` is legacy code and is not the launcher UI.
 
 Themes: default Amber Classic, or “跟随系统主题” in the menu-bar menu (also `--system-theme`). The system mode uses the Qt platform palette and default font, persisted across restarts. This implements palette/font integration, not pixel-identical native macOS widgets or direct parsing of GTK CSS. Linux GTK palette/font integration requires a compatible Qt platform-theme plugin and remains to be validated on GNOME/Xfce; KDE/DDE adapters likewise remain future work.
 
-## Build
+## Build on Linux/X11
+
+```sh
+sudo apt install qt6-base-dev qt6-declarative-dev qt6-tools-dev cmake g++ libglib2.0-bin
+cmake -S launcher -B build/launcher -DCMAKE_BUILD_TYPE=Release
+cmake --build build/launcher --parallel
+QT_QPA_PLATFORM=xcb ctest --test-dir build/launcher --output-on-failure
+QT_QPA_PLATFORM=xcb ./build/launcher/XLaunch
+```
+
+The launcher uses the current X11 desktop session and does not require Wayland or a compositor-specific protocol.
+
+The default window is a compact `Menu` mode with category shortcuts. `全部应用` or Enter switches to the full-screen app launcher; the `Menu` button or Esc returns to the compact menu.
+
+For the combined ICEWM desktop shell, run `scripts/start-icewm-ai-desktop.sh` from the ICEWM session startup. It starts XDock and XLaunch with `QT_QPA_PLATFORM=xcb`; the existing Console/API services remain user services.
+
+## Build on macOS
 
 ```sh
 brew install qtbase qtdeclarative cmake
@@ -38,6 +54,6 @@ Category metadata is best effort; uncategorized apps appear under Utilities. The
 
 ## Architecture
 
-`src/catalog.*`: shared filtering and activation model. `qml/Main.qml`: shared presentation. `src/platform_macos.mm`: macOS discovery/icons/activation. `src/platform_stub.cpp`: future platform adapter boundary. XDock remains an independent repository and is not required.
+`src/catalog.*`: shared filtering and activation model. `qml/Main.qml`: shared presentation. `src/platform_macos.mm`: macOS discovery/icons/activation. `src/platform_linux.cpp`: freedesktop application discovery, icon-theme lookup and `gio` activation. `src/platform_stub.cpp`: fallback adapter for unsupported platforms. XDock remains an independent repository and is not required.
 
 Qt Quick uses a scene graph with Metal on macOS and graphics backends on other platforms: [official scene graph documentation](https://doc.qt.io/qt-6/qtquick-visualcanvas-scenegraph.html). This choice provides portable UI rendering, not automatic support for every desktop's system integration.

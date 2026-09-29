@@ -25,6 +25,7 @@ int main(int argc,char **argv){
  QQmlApplicationEngine engine; engine.rootContext()->setContextProperty("catalog",&catalog);engine.addImageProvider("apps",new Icons(&catalog));
  engine.loadFromModule("XLaunch","Main");if(engine.rootObjects().isEmpty())return 1;
  auto window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());
+ window->setProperty("appLaunchMode",app.arguments().contains("--fullscreen")||app.arguments().contains("--screenshot"));
  QSettings settings;
  window->setProperty("systemTheme",app.arguments().contains("--system-theme")||settings.value("theme/system",false).toBool());
  QObject::connect(&app,&QGuiApplication::applicationStateChanged,[&](Qt::ApplicationState state){if(state==Qt::ApplicationActive && !window->isVisible()){window->show();window->raise();window->requestActivate();}});
@@ -37,7 +38,7 @@ int main(int argc,char **argv){
  QObject::connect(&tray,&QSystemTrayIcon::activated,[&](auto reason){if(reason==QSystemTrayIcon::Trigger){window->show();window->raise();window->requestActivate();}});
  app.setQuitOnLastWindowClosed(false);
  if(app.arguments().contains("--screenshot")) {
-   window->showNormal();window->resize(1448,1086);
+   window->showFullScreen();
    QTimer::singleShot(2000,[&]{window->grabWindow().save("xlaunch-preview.png");app.quit();});
  }
  return app.exec();

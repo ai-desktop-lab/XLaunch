@@ -6,21 +6,72 @@ import QtQuick.Window
 ApplicationWindow {
  id: root
  visible: true
- width: 1448; height: 1086
- visibility: Window.Maximized
- flags: Qt.Window | Qt.FramelessWindowHint
+ width: appLaunchMode ? 1448 : 760; height: appLaunchMode ? 1086 : 540
+ visibility: appLaunchMode ? Window.FullScreen : Window.Windowed
+ flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
  title: "XLaunch"
  color: "#513b27"
  property string notice: ""
  property bool systemTheme: false
+ property bool appLaunchMode: false
  readonly property color foreground: systemTheme ? palette.windowText : "#fff9eb"
  readonly property color secondary: systemTheme ? palette.placeholderText : "#dfd0ba"
  property real uiScale: Math.max(0.75, Math.min(width / 1448, height / 1086))
- Image { anchors.fill: parent; visible:!root.systemTheme;source: "../assets/amber-wallpaper.png"; fillMode: Image.PreserveAspectCrop }
- Rectangle { anchors.fill: parent; color: root.systemTheme?root.palette.window:"#18000000" }
- Label { x: 26; y: 24; text: "XLaunch"; color: root.foreground; font.pixelSize: 19 }
+ Image { anchors.fill: parent; visible:!root.systemTheme && root.appLaunchMode;source: "../assets/amber-wallpaper.png"; fillMode: Image.PreserveAspectCrop }
+ Rectangle { anchors.fill: parent; color: root.systemTheme?root.palette.window:(root.appLaunchMode?"#18000000":"#513b27") }
+
+ Rectangle {
+  id: menuSurface
+  visible: !root.appLaunchMode
+  anchors.fill: parent
+  color: root.systemTheme ? root.palette.window : "#513b27"
+  Column {
+   anchors { left: parent.left; top: parent.top; right: parent.right; margins: 34 }
+   spacing: 16
+   Label { text: "XLaunch"; color: root.foreground; font.pixelSize: 28; font.bold: true }
+   Label { text: "Menu"; color: root.secondary; font.pixelSize: 15 }
+   Rectangle { width: parent.width; height: 1; color: root.systemTheme ? root.palette.mid : "#55fce2b1" }
+   Row {
+    spacing: 12
+    Button {
+     text: "全部应用"
+     onClicked: { catalog.category = "全部"; catalog.query = ""; root.appLaunchMode = true; }
+    }
+    Button {
+     text: "搜索应用"
+     onClicked: { root.appLaunchMode = true; search.forceActiveFocus(); }
+    }
+   }
+   Label { text: "分类"; color: root.foreground; font.pixelSize: 17; font.bold: true }
+   Flow {
+    width: parent.width
+    spacing: 8
+    Repeater {
+     model: ["网络","多媒体","游戏","图形","办公","开发","系统","工具"]
+     delegate: Button {
+      required property string modelData
+      text: modelData
+      onClicked: { catalog.category = modelData; catalog.query = ""; root.appLaunchMode = true; }
+     }
+    }
+   }
+   Item { width: 1; height: 8 }
+   Button { text: "退出 XLaunch"; onClicked: Qt.quit() }
+   Label { text: "Enter 打开全部应用 · Esc 返回或关闭"; color: root.secondary; font.pixelSize: 13 }
+  }
+ }
+
+ Label { visible: root.appLaunchMode; x: 26; y: 24; text: "XLaunch"; color: root.foreground; font.pixelSize: 19 }
+ Button {
+  id: menuButton
+  visible: root.appLaunchMode
+  anchors { top: parent.top; right: parent.right; topMargin: 18; rightMargin: 26 }
+  text: "Menu"
+  onClicked: { root.appLaunchMode = false; catalog.query = ""; catalog.category = "全部"; }
+ }
  TextField {
   id: search
+  visible: root.appLaunchMode
   anchors.top: parent.top; anchors.topMargin: 54 * root.uiScale
   anchors.horizontalCenter: parent.horizontalCenter
   width: Math.min(parent.width * 0.56, 780); height: 58 * root.uiScale
@@ -33,11 +84,13 @@ ApplicationWindow {
   onAccepted: catalog.launch(grid.currentIndex)
  }
  Label {
+  visible: root.appLaunchMode
   anchors.top: search.bottom; anchors.topMargin: 16; anchors.horizontalCenter: search.horizontalCenter
   text: search.text.length ? catalog.count + " 个应用" : "输入应用名称搜索 · AI 与系统指令将在后续版本接入"
   color: root.secondary;font.pixelSize: 14
  }
  RowLayout {
+  visible: root.appLaunchMode
   anchors {left: parent.left;right:parent.right;top:search.bottom;bottom:footer.top;topMargin:54*root.uiScale;bottomMargin:20;leftMargin:26;rightMargin:30}
   spacing: 26
   ColumnLayout {
@@ -106,12 +159,14 @@ ApplicationWindow {
    Label {anchors.centerIn:parent;visible:catalog.count===0;text:catalog.category==="AI"?"Agent 尚未连接\n请切换到“全部”浏览本机应用": "没有匹配的应用\n尝试其他名称或分类";color:root.foreground;font.pixelSize:20;horizontalAlignment:Text.AlignHCenter}
   }
  }
- Label {id:footer;anchors.bottom:parent.bottom;anchors.bottomMargin:28;anchors.horizontalCenter:parent.horizontalCenter;text:root.notice.length?root.notice:"左右拖动翻页     方向键 选择     Enter 打开     Esc 关闭";color:root.secondary;font.pixelSize:16}
- Shortcut {sequence:"Escape";onActivated:{if(search.text.length){search.clear();search.forceActiveFocus()}else root.hide()}}
+ Label {id:footer;visible:root.appLaunchMode;anchors.bottom:parent.bottom;anchors.bottomMargin:28;anchors.horizontalCenter:parent.horizontalCenter;text:root.notice.length?root.notice:"左右拖动翻页     方向键 选择     Enter 打开     Esc 返回 Menu";color:root.secondary;font.pixelSize:16}
+ Shortcut {sequence:"Escape";onActivated:{if(search.text.length){search.clear();search.forceActiveFocus()}else if(root.appLaunchMode){root.appLaunchMode=false}else root.hide()}}
+ Shortcut {sequence:"Return";enabled:!root.appLaunchMode;onActivated:{catalog.category="全部";catalog.query="";root.appLaunchMode=true;search.forceActiveFocus()}}
+ Shortcut {sequence:"F11";onActivated:{root.appLaunchMode=!root.appLaunchMode;if(root.appLaunchMode)search.forceActiveFocus()}}
  Shortcut {sequence:"Ctrl+F";onActivated:search.forceActiveFocus()}
  Shortcut {sequence:"Meta+F";onActivated:search.forceActiveFocus()}
  Shortcut {sequence:"Ctrl+R";onActivated:catalog.refresh()}
- onVisibleChanged:if(visible){search.clear();catalog.category="全部";grid.currentIndex=0;pages.currentIndex=0;search.forceActiveFocus()}
+ onVisibleChanged:if(visible){root.appLaunchMode=false;search.clear();catalog.category="全部";grid.currentIndex=0;pages.currentIndex=0}
  Shortcut {sequence:"Ctrl+Right";onActivated:{pages.currentIndex=Math.min(pages.count-1,pages.currentIndex+1);grid.currentIndex=pages.currentIndex*grid.pageSize}}
  Shortcut {sequence:"Ctrl+Left";onActivated:{pages.currentIndex=Math.max(0,pages.currentIndex-1);grid.currentIndex=pages.currentIndex*grid.pageSize}}
  Connections {target:catalog;function onFailure(message){root.notice=message}}

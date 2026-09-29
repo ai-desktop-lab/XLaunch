@@ -6,6 +6,8 @@
 
 # XLaunch
 
+The native launcher supports Linux/X11 ICEWM sessions as well as macOS. Linux discovers freedesktop applications, uses the active icon theme, and launches through `gio`. The compact Menu is the default; Enter, F11, or “全部应用” opens the full-screen app launcher, while Menu or Esc returns.
+
 Native macOS launcher implementation: [C++ / Qt Quick source and build instructions](launcher/README.md). Includes real local app discovery/launching and Amber/System themes; Linux integration remains planned.
 
 ## XLaunch · Classic desktop, AI commands

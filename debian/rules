@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@ --buildsystem=cmake
+
+override_dh_auto_clean:
+	rm -rf build/launcher
+
+override_dh_auto_configure:
+	cmake -S launcher -B build/launcher -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_INSTALL_PREFIX=/usr
+
+override_dh_auto_build:
+	cmake --build build/launcher --parallel
+
+override_dh_auto_install:
+	DESTDIR=$(CURDIR)/debian/xlaunch cmake --install build/launcher
