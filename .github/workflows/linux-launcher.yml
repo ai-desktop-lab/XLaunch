@@ -1,0 +1,15 @@
+name: Linux native launcher
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: fedora:44
+    steps:
+      - name: Install Qt and Linux launcher dependencies
+        run: dnf install -y git cmake gcc-c++ qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qttools-devel glib2-devel
+      - uses: actions/checkout@v4
+      - run: cmake -S launcher -B build/launcher -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build/launcher --parallel 2
+      - run: QT_QPA_PLATFORM=offscreen ctest --test-dir build/launcher --output-on-failure
