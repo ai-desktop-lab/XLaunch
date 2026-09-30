@@ -22,7 +22,7 @@ For a headless VPS or container, set `DISPLAY` to an Xvfb display and keep
 `QT_QPA_PLATFORM=xcb`. Xvfb is CPU-rendered and has no GPU requirement; use
 X11VNC/noVNC as a separate display transport when remote access is needed.
 
-The default window is a compact `Menu` mode with category shortcuts. `全部应用` or Enter switches to the full-screen app launcher; the `Menu` button or Esc returns to the compact menu.
+The default window is a compact `Menu` mode with category shortcuts. `全部应用` or Enter switches to the full-screen app launcher; the `Menu` button or Esc returns to the compact menu. In the ICEWM/XDock profile, compact Menu is positioned at the lower-left of the available work area so its bottom edge meets the top of the XDock strut; full-screen mode remains screen-wide.
 
 For the combined ICEWM desktop shell, run `scripts/start-icewm-ai-desktop.sh` from the ICEWM session startup. It starts XDock and XLaunch with `QT_QPA_PLATFORM=xcb`; the existing Console/API services remain user services.
 

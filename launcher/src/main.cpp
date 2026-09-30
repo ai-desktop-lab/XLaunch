@@ -8,6 +8,7 @@
 #include <QTimer>
 #include <QDebug>
 #include <QStyle>
+#include <QScreen>
 #include <QQuickStyle>
 #include <QSettings>
 int main(int argc,char **argv){
@@ -26,6 +27,26 @@ int main(int argc,char **argv){
  engine.loadFromModule("XLaunch","Main");if(engine.rootObjects().isEmpty())return 1;
  auto window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());
  window->setProperty("appLaunchMode",app.arguments().contains("--fullscreen")||app.arguments().contains("--screenshot"));
+ // Keep the compact Menu attached to the lower-left corner of the usable
+ // work area. IceWM/XDock publish the Dock strut, so availableGeometry ends
+ // exactly at the top edge of the Dock while full-screen mode remains global.
+ const auto positionCompactMenu = [window] {
+   if (window->property("appLaunchMode").toBool()) return;
+   auto *screen = window->screen();
+   if (!screen) return;
+   const QRect area = screen->availableGeometry();
+   window->setPosition(area.left(), area.bottom() - window->height() + 1);
+ };
+ QTimer::singleShot(0, window, positionCompactMenu);
+ QObject::connect(window,&QWindow::visibilityChanged,[window,positionCompactMenu](QWindow::Visibility){
+   QTimer::singleShot(0, window, positionCompactMenu);
+ });
+ QObject::connect(window,&QWindow::heightChanged,[window,positionCompactMenu](int){
+   QTimer::singleShot(0, window, positionCompactMenu);
+ });
+ QObject::connect(window,&QWindow::screenChanged,[window,positionCompactMenu](QScreen *){
+   QTimer::singleShot(0, window, positionCompactMenu);
+ });
  QSettings settings;
  window->setProperty("systemTheme",app.arguments().contains("--system-theme")||settings.value("theme/system",false).toBool());
  QObject::connect(&app,&QGuiApplication::applicationStateChanged,[&](Qt::ApplicationState state){if(state==Qt::ApplicationActive && !window->isVisible()){window->show();window->raise();window->requestActivate();}});
