@@ -109,3 +109,11 @@ http://127.0.0.1:17000
 - [`docs/en/OFFLINE_AI_WORKSPACE_INSTALLER.md`](docs/en/OFFLINE_AI_WORKSPACE_INSTALLER.md)
 - [`docs/en/operations/service-port-plan.md`](docs/en/operations/service-port-plan.md)
 - [`docs/en/designs/2026-06-07-ai-workspace-desktop-design.md`](docs/en/designs/2026-06-07-ai-workspace-desktop-design.md)
+
+## Native X11 menu and Dock integration
+
+The native launcher in `launcher/` keeps the amber visual style. Its compact menu is anchored above the Dock, with inline search, categories, virtualized application rows, and right-click “Keep in Dock”. “All applications” and F11 open the existing fullscreen grid.
+
+Use `xlaunch --toggle` from a panel button and `xlaunch --hidden` for session autostart. Each X11 display has its own single instance and XDock IPC endpoint. Application launches run asynchronously; hidden fullscreen pages are not instantiated. Both XDock and XLaunch must use the updated display-scoped IPC version.
+
+[Menu layout, interaction, and performance specification](docs/remote-menu-design.md).

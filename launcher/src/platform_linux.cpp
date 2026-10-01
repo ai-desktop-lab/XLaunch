@@ -9,6 +9,9 @@
 #include <QSet>
 #include <QScreen>
 #include <QGuiApplication>
+#include <QApplication>
+#include <QStyle>
+#include <QLocale>
 #include <algorithm>
 #include <utility>
 
@@ -65,7 +68,7 @@ QString categoryFor(const QStringList &categories)
 
 QString desktopName(const QSettings &desktop, const QFileInfo &file)
 {
-    const auto name = desktop.value("Desktop Entry/Name").toString().trimmed();
+    const auto name = desktop.value("Desktop Entry/Name[" + QLocale().name() + "]", desktop.value("Desktop Entry/Name")).toString().trimmed();
     return name.isEmpty() ? file.completeBaseName() : name;
 }
 }
@@ -79,11 +82,12 @@ QList<Application> discoverApplications()
         QDirIterator files(root, {"*.desktop"}, QDir::Files, QDirIterator::Subdirectories);
         while (files.hasNext()) {
             const QFileInfo file(files.next());
-            if (seen.contains(file.absoluteFilePath())) continue;
+            QString desktopId = QDir(root).relativeFilePath(file.filePath()); desktopId.replace('/', '-');
+            if (seen.contains(desktopId)) continue;
+            seen.insert(desktopId); // First XDG entry, including Hidden, overrides lower priority roots.
             QSettings desktop(file.absoluteFilePath(), QSettings::IniFormat);
             if (desktop.value("Desktop Entry/Type").toString() != "Application" ||
                 !desktopVisible(desktop)) continue;
-            seen.insert(file.absoluteFilePath());
 
             Application app;
             app.name = desktopName(desktop, file);
@@ -107,6 +111,7 @@ QImage applicationIcon(const QString &path)
     if (QFileInfo::exists(iconName)) icon = QIcon(iconName);
     if (icon.isNull() && !iconName.isEmpty()) icon = QIcon::fromTheme(iconName);
     if (icon.isNull()) icon = QIcon::fromTheme("application-x-executable");
+    if (icon.isNull()) icon = QApplication::style()->standardIcon(QStyle::SP_FileIcon);
     return icon.pixmap(QSize(96, 96)).toImage();
 }
 

@@ -4,25 +4,36 @@
 #include <QJsonObject>
 #include <QLocalSocket>
 #include <QUrl>
+#include <QRegularExpression>
+#include <QFutureWatcher>
+#include <QtConcurrent>
 
 namespace {
 constexpr auto xdockLaunchEventServer = "ai-workspace-lab.xdock.launch-events";
 
-void notifyXDock(const Application &app) {
+bool notifyXDock(const Application &app, const QString &type = "launched") {
     QLocalSocket socket;
-    socket.connectToServer(QString::fromLatin1(xdockLaunchEventServer));
-    if (!socket.waitForConnected(150)) return;
+    QString session = qEnvironmentVariable("DISPLAY", qEnvironmentVariable("WAYLAND_DISPLAY", "default"));
+    if (!qEnvironmentVariable("DISPLAY").isEmpty()) session = session.section('.', 0, 0);
+    session.replace(QRegularExpression("[^a-zA-Z0-9_-]"), "_");
+    socket.connectToServer(QString::fromLatin1(xdockLaunchEventServer) + "." + session);
+    if (!socket.waitForConnected(150)) return false;
     const auto encodedPath = QString::fromLatin1(QUrl::toPercentEncoding(app.path));
-    const QJsonObject event{{"type", "launched"}, {"name", app.name},
+    const QJsonObject event{{"type", type}, {"name", app.name},
                             {"launchId", app.path}, {"icon", "path:" + encodedPath}};
     socket.write(QJsonDocument(event).toJson(QJsonDocument::Compact));
     socket.write("\n");
     socket.waitForBytesWritten(150);
+    if (type == "pin") {
+        if (!socket.waitForReadyRead(300)) return false;
+        return socket.readLine().trimmed() == "ok";
+    }
+    return true;
 }
 }
 
 Catalog::Catalog(){refresh();}
-void Catalog::refresh(){apps=discoverApplications();filter();}
+void Catalog::refresh(){apps=discoverApplications();++m_iconRevision;filter();}
 void Catalog::setQuery(QString q){if(q==m_query)return;m_query=q;filter();}
 void Catalog::setCategory(QString c){if(c==m_category)return;m_category=c;filter();}
 void Catalog::filter(){
@@ -33,17 +44,30 @@ void Catalog::filter(){
 QVariant Catalog::data(const QModelIndex &index,int role) const{
  if(!index.isValid()||index.row()<0||index.row()>=visible.size())return {};
  int i=visible[index.row()]; const auto &a=apps[i];
- if(role==Name)return a.name;if(role==Icon)return QString("image://apps/%1").arg(i);if(role==Path)return a.path;return {};
+ if(role==Name)return a.name;if(role==Icon)return QString("image://apps/%1/%2").arg(i).arg(m_iconRevision);if(role==Path)return a.path;return {};
 }
 QHash<int,QByteArray> Catalog::roleNames()const{return {{Name,"appName"},{Icon,"appIcon"},{Path,"appPath"}};}
 QVariantList Catalog::page(int start,int size)const{
  QVariantList result;
  for(int row=qMax(0,start);row<qMin(start+size,visible.size());++row)
-   result.append(QVariantMap{{"name",data(index(row),Name)},{"icon",data(index(row),Icon)},{"row",row}});
+   result.append(QVariantMap{{"name",data(index(row),Name)},{"icon",data(index(row),Icon)},{"row",row},{"path",data(index(row),Path)}});
  return result;
 }
+bool Catalog::pin(int row) {
+ if (row<0 || row>=visible.size()) return false;
+ bool ok=notifyXDock(apps[visible[row]], "pin");
+ if (!ok) emit failure("无法驻留：请确认 XDock 正在运行，或应用已经驻留。");
+ return ok;
+}
 bool Catalog::launch(int row){
- if(row<0||row>=visible.size())return false;
- const auto &app=apps[visible[row]];
- QString error; if(openApplication(app.path,error)){notifyXDock(app);emit launched();return true;}emit failure(error);return false;
+ if(row<0||row>=visible.size()||m_launching)return false;
+ const auto application=apps[visible[row]];
+ m_launching=true;emit launchingChanged();
+ auto *watcher=new QFutureWatcher<QString>(this);
+ connect(watcher,&QFutureWatcher<QString>::finished,this,[this,watcher,application]{
+   QString error=watcher->result(); watcher->deleteLater(); m_launching=false; emit launchingChanged();
+   if(error.isEmpty()){notifyXDock(application);emit launched();}else emit failure(error);
+ });
+ watcher->setFuture(QtConcurrent::run([application]{QString error;openApplication(application.path,error);return error;}));
+ return true;
 }

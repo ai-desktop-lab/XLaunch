@@ -20,17 +20,20 @@ class Catalog : public QAbstractListModel {
  void setQuery(QString); void setCategory(QString);
  Q_INVOKABLE void refresh();
  Q_INVOKABLE bool launch(int row);
+ Q_INVOKABLE bool pin(int row);
+ Q_PROPERTY(bool launching READ launching NOTIFY launchingChanged)
+ bool launching() const { return m_launching; }
  int generation=0;
  int revision() const {return generation;}
  Q_INVOKABLE QVariantList page(int start,int size) const;
- signals: void filterChanged(); void launched(); void failure(QString message);
- private: void filter();
+ signals: void launchingChanged(); void filterChanged(); void launched(); void failure(QString message);
+ private: int m_iconRevision=0; bool m_launching=false; void filter();
 };
 class Icons : public QQuickImageProvider {
  Catalog *catalog;
  public: Icons(Catalog *c):QQuickImageProvider(Image),catalog(c){}
  QImage requestImage(const QString &id,QSize *size,const QSize &) override {
-   bool ok; int index=id.toInt(&ok); QImage image;
+   bool ok; int index=id.section('/',0,0).toInt(&ok); QImage image;
    if(ok && index>=0 && index<catalog->apps.size()) {
      auto &app=catalog->apps[index];
      if(app.icon.isNull()) app.icon=applicationIcon(app.path);
