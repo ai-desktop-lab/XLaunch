@@ -7,7 +7,7 @@ ApplicationWindow {
  id: root
  visible: false
  width: 520; height: 560
- flags: Qt.Tool | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
+ flags: Qt.Window | Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint
  title: "XLaunch"
  color: "#513b27"
  property string notice: ""

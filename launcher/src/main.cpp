@@ -54,22 +54,35 @@ int main(int argc,char **argv){
  window->setProperty("appLaunchMode",app.arguments().contains("--fullscreen")||app.arguments().contains("--screenshot"));
  QSettings settings;
  window->setProperty("systemTheme",app.arguments().contains("--system-theme")||settings.value("theme/system",false).toBool());
+ const auto hideFromTaskLists=[window]{
 #ifdef XLAUNCH_X11
- if(QGuiApplication::platformName()=="xcb"){
+   if(QGuiApplication::platformName()!="xcb")return;
    if(auto *native=qGuiApp->nativeInterface<QNativeInterface::QX11Application>()){
      auto *connection=native->connection();
      const auto atom=[connection](const char *name){auto *r=xcb_intern_atom_reply(connection,xcb_intern_atom(connection,0,std::strlen(name),name),nullptr);auto value=r?r->atom:0;std::free(r);return value;};
-     const xcb_atom_t states[]={atom("_NET_WM_STATE_ABOVE"),atom("_NET_WM_STATE_SKIP_TASKBAR"),atom("_NET_WM_STATE_SKIP_PAGER")};
-     xcb_change_property(connection,XCB_PROP_MODE_REPLACE,window->winId(),atom("_NET_WM_STATE"),XCB_ATOM_ATOM,32,3,states);xcb_flush(connection);
+     // Qt rewrites state properties during normal/fullscreen transitions. Ask the WM
+     // to retain task-list exclusions after the window has been mapped.
+     xcb_client_message_event_t event{};event.response_type=XCB_CLIENT_MESSAGE;event.format=32;
+     event.window=window->winId();event.type=atom("_NET_WM_STATE");
+     event.data.data32[0]=1;event.data.data32[1]=atom("_NET_WM_STATE_SKIP_TASKBAR");
+     event.data.data32[2]=atom("_NET_WM_STATE_SKIP_PAGER");event.data.data32[3]=1;
+     auto *tree=xcb_query_tree_reply(connection,xcb_query_tree(connection,window->winId()),nullptr);
+     if(!tree)return;const auto root=tree->root;std::free(tree);
+     xcb_send_event(connection,0,root,XCB_EVENT_MASK_SUBSTRUCTURE_REDIRECT|XCB_EVENT_MASK_SUBSTRUCTURE_NOTIFY,reinterpret_cast<const char *>(&event));xcb_flush(connection);
    }
- }
 #endif
- const auto position=[window]{
-   if(window->property("appLaunchMode").toBool()){window->showFullScreen();return;}
+ };
+ const auto position=[window,hideFromTaskLists]{
+   if(window->property("appLaunchMode").toBool()){
+     const auto screen=window->screen()->geometry();
+     window->showFullScreen();window->resize(screen.size());window->setPosition(screen.topLeft());
+     QTimer::singleShot(0,window,hideFromTaskLists);return;
+   }
    window->showNormal();
    const auto available=window->screen()->availableGeometry();
    QSize size(qMin(520,available.width()),qMin(560,available.height()));
    window->resize(size); window->setPosition(available.left(),available.bottom()-size.height()+1);
+   QTimer::singleShot(0,window,hideFromTaskLists);
  };
  const auto showMenu=[window,position]{
    window->setProperty("appLaunchMode",false); position(); window->show(); window->raise();window->requestActivate();
@@ -102,7 +115,7 @@ int main(int argc,char **argv){
  QObject::connect(&tray,&QSystemTrayIcon::activated,[&](auto reason){if(reason==QSystemTrayIcon::Trigger)showMenu();});
  app.setQuitOnLastWindowClosed(false);
  if(!app.arguments().contains("--hidden")&&!inspection) {
-   if(app.arguments().contains("--fullscreen")){window->showFullScreen();window->requestActivate();}
+   if(app.arguments().contains("--fullscreen")){position();window->requestActivate();}
    else showMenu();
  }
  if(app.arguments().contains("--screenshot")) {
