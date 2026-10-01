@@ -13,6 +13,7 @@ ApplicationWindow {
  property string notice: ""
  property bool systemTheme: false
  property bool appLaunchMode: false
+ readonly property bool sessionOverlayOpen: userMenu.visible || sessionDialog.visible || profileDialog.visible
  readonly property color foreground: systemTheme ? palette.windowText : "#fff9eb"
  readonly property color secondary: systemTheme ? palette.placeholderText : "#dfd0ba"
  property real uiScale: Math.max(0.75, Math.min(width / 1448, height / 1086))
@@ -126,7 +127,7 @@ ApplicationWindow {
      Accessible.name:"用户与会话："+sessionActions.userName
      onClicked:userMenu.open()
      AmberMenu {
-      id:userMenu;objectName:"userSessionMenu";width:240;popupType:Popup.Window;x:userMenuButton.width-width;y:-height
+      id:userMenu;objectName:"userSessionMenu";width:240;popupType:Popup.Item;x:userMenuButton.width-width;y:-height
       onAboutToShow:sessionActions.refresh()
       AmberMenuItem {text:sessionActions.displayName+" · 用户信息";onTriggered:profileDialog.open()}
       MenuSeparator{}
@@ -262,7 +263,7 @@ ApplicationWindow {
         property string actionKey: ""
         property string detail: ""
         width: Math.min(420, root.width - 24)
-        modal: true; popupType: Popup.Window
+        modal: true; popupType: Popup.Item
         anchors.centerIn:Overlay.overlay
         title: "会话操作"
         standardButtons: Dialog.Ok | Dialog.Cancel
@@ -281,7 +282,7 @@ ApplicationWindow {
     Dialog {
         id: profileDialog
         objectName: "userInformation"
-        width:Math.min(420,root.width-24);modal:true;popupType:Popup.Window
+        width:Math.min(420,root.width-24);modal:true;popupType:Popup.Item
         anchors.centerIn:Overlay.overlay
         title:"当前用户";standardButtons:Dialog.Close
         palette.window:root.menuBackground;palette.text:root.foreground;palette.windowText:root.foreground;palette.buttonText:root.foreground;palette.button:root.menuHover

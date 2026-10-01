@@ -106,7 +106,7 @@ int main(int argc,char **argv){
    }
  });
  auto *hideTimer=new QTimer(window);hideTimer->setSingleShot(true);hideTimer->setInterval(250);
- QObject::connect(hideTimer,&QTimer::timeout,window,[window,&app]{if(app.applicationState()!=Qt::ApplicationActive&&!window->property("appLaunchMode").toBool())window->hide();});
+ QObject::connect(hideTimer,&QTimer::timeout,window,[window,&app]{if(app.applicationState()!=Qt::ApplicationActive&&!window->property("appLaunchMode").toBool()&&!window->property("sessionOverlayOpen").toBool())window->hide();});
  QObject::connect(&app,&QGuiApplication::applicationStateChanged,window,[hideTimer](Qt::ApplicationState state){if(state==Qt::ApplicationActive)hideTimer->stop();else hideTimer->start();});
  QMenu menu; menu.addAction("打开 XLaunch",showMenu);menu.addAction("刷新应用",&catalog,&Catalog::refresh);
  auto themeAction=menu.addAction("跟随系统主题");themeAction->setCheckable(true);themeAction->setChecked(window->property("systemTheme").toBool());
