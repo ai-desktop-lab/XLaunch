@@ -1,3 +1,4 @@
+#include "SessionActions.h"
 #include "catalog.h"
 #include <QApplication>
 #include <QQmlApplicationEngine>
@@ -48,7 +49,8 @@ int main(int argc,char **argv){
    if(paged!=total||!catalog.page(total+1,35).isEmpty())return 4;
    qInfo()<<"Catalog filtering and bounds passed; applications:"<<total;return total>0?0:3;
  }
- QQmlApplicationEngine engine; engine.rootContext()->setContextProperty("catalog",&catalog);engine.addImageProvider("apps",new Icons(&catalog));
+ SessionActions sessionActions(inspection);
+ QQmlApplicationEngine engine; engine.rootContext()->setContextProperty("sessionActions",&sessionActions); engine.rootContext()->setContextProperty("catalog",&catalog);engine.addImageProvider("apps",new Icons(&catalog));
  engine.loadFromModule("XLaunch","Main");if(engine.rootObjects().isEmpty())return 1;
  auto window=qobject_cast<QQuickWindow*>(engine.rootObjects().first());
  window->setProperty("appLaunchMode",app.arguments().contains("--fullscreen")||app.arguments().contains("--screenshot"));

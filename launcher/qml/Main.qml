@@ -31,13 +31,19 @@ ApplicationWindow {
  readonly property var categories: ["全部","网络","多媒体","游戏","图形","办公","开发","系统","工具","AI"]
  component AmberMenu: Menu {
   width:220
-  palette.window:root.menuBackground;palette.text:root.foreground;palette.buttonText:root.foreground
+  palette.window:root.menuBackground;palette.text:root.foreground;palette.windowText:root.foreground;palette.buttonText:root.foreground
   palette.highlight:root.menuSelection;palette.highlightedText:root.foreground
   background:Rectangle {implicitWidth:220;implicitHeight:40;color:root.menuBackground;border.color:root.menuBorder;radius:4}
  }
+ component AmberMenuItem: MenuItem {
+  id: itemControl
+  height:36;implicitWidth:280
+  contentItem:Text {text:itemControl.text;color:itemControl.enabled?root.foreground:root.secondary;font.pixelSize:14;verticalAlignment:Text.AlignVCenter;elide:Text.ElideRight;leftPadding:8}
+  background:Rectangle {radius:4;color:itemControl.highlighted?root.menuSelection:"transparent";border.color:itemControl.activeFocus?root.menuFocus:"transparent"}
+ }
  component MenuAction: Button {
   id: control
-  contentItem: Label { text: control.text; color: root.systemTheme && control.highlighted ? root.palette.highlightedText : root.foreground; verticalAlignment: Text.AlignVCenter; horizontalAlignment:Text.AlignHCenter; font.pixelSize:14 }
+  contentItem: Label { text: control.text; color: !control.enabled ? root.secondary : root.systemTheme && control.highlighted ? root.palette.highlightedText : root.foreground; verticalAlignment: Text.AlignVCenter; horizontalAlignment:Text.AlignHCenter; font.pixelSize:14 }
   background: Rectangle { radius:5; color:control.down?root.menuSelection:control.hovered||control.activeFocus?root.menuHover:root.menuBackground; border.color:control.activeFocus?root.menuFocus:root.menuBorder }
  }
  Rectangle {
@@ -91,7 +97,7 @@ ApplicationWindow {
        onClicked:{menuList.currentIndex=index;catalog.launch(index)}
        ToolTip.visible:hovered;ToolTip.delay:650;ToolTip.text:appName
        MouseArea {anchors.fill:parent;acceptedButtons:Qt.RightButton;onClicked:pinMenu.popup()}
-       AmberMenu {id:pinMenu;popupType:Popup.Window;MenuItem {text:"在 Dock 中驻留";onTriggered:catalog.pin(appRow.index)}}
+       AmberMenu {id:pinMenu;popupType:Popup.Window;AmberMenuItem {text:"在 Dock 中驻留";onTriggered:catalog.pin(appRow.index)}}
       }
       Keys.onReturnPressed:catalog.launch(currentIndex)
       Keys.onEnterPressed:catalog.launch(currentIndex)
@@ -101,8 +107,40 @@ ApplicationWindow {
    }
    Rectangle {Layout.fillWidth:true;Layout.preferredHeight:1;color:root.menuBorder}
    RowLayout {
-    Label {text:catalog.launching?"正在打开…":root.notice.length?root.notice:catalog.count+" 个应用";color:root.secondary;Layout.fillWidth:true;elide:Text.ElideRight;font.pixelSize:12}
-    MenuAction {text:"关闭";onClicked:root.hide()}
+    Label {text:catalog.launching?"正在打开…":root.notice.length?root.notice:catalog.count+" 个应用";color:root.secondary;Layout.fillWidth:true;Layout.minimumWidth:0;elide:Text.ElideRight;font.pixelSize:12}
+    MenuAction {
+     objectName:"collapseMenuButton";Layout.preferredWidth:32;Layout.preferredHeight:32
+     Accessible.name:"收起 XLaunch 菜单"
+     contentItem:Text {text:"⌄";color:root.foreground;font.pixelSize:22;horizontalAlignment:Text.AlignHCenter;verticalAlignment:Text.AlignVCenter}
+     ToolTip.visible:hovered;ToolTip.delay:500;ToolTip.text:"收起菜单（Esc）"
+     onClicked:root.hide()
+    }
+    MenuAction {
+     id:userMenuButton;objectName:"userMenuButton";Layout.preferredWidth:32;Layout.preferredHeight:32
+     contentItem:Rectangle {
+      radius:height/2;color:root.menuSelection
+      Image {anchors.fill:parent;source:sessionActions.avatar;visible:source.toString().length>0;fillMode:Image.PreserveAspectCrop;sourceSize:Qt.size(32,32)}
+      Text {anchors.centerIn:parent;text:sessionActions.userName.slice(0,1).toUpperCase();visible:sessionActions.avatar.toString().length===0;color:root.foreground;font.pixelSize:14}
+     }
+     ToolTip.visible:hovered;ToolTip.delay:500;ToolTip.text:sessionActions.userName+" · 用户与会话"
+     Accessible.name:"用户与会话："+sessionActions.userName
+     onClicked:userMenu.open()
+     AmberMenu {
+      id:userMenu;objectName:"userSessionMenu";width:240;popupType:Popup.Window;x:userMenuButton.width-width;y:-height
+      onAboutToShow:sessionActions.refresh()
+      AmberMenuItem {text:sessionActions.displayName+" · 用户信息";onTriggered:profileDialog.open()}
+      MenuSeparator{}
+      Repeater {
+       model:sessionActions.actions
+       AmberMenuItem {
+        required property var modelData
+        height:36;text:modelData.text;enabled:modelData.enabled
+        ToolTip.visible:hovered&&!enabled;ToolTip.text:modelData.reason;ToolTip.delay:450
+        onTriggered:sessionActions.request(modelData.key)
+       }
+      }
+     }
+    }
    }
   }
  }
@@ -186,7 +224,7 @@ ApplicationWindow {
          Rectangle {anchors.fill:parent;anchors.margins:6;radius:5;color:(grid.currentIndex===modelData.row&&grid.activeFocus)||mouse.containsMouse?(root.systemTheme?root.palette.alternateBase:"#20ffffff"):"transparent";border.color:grid.currentIndex===modelData.row&&grid.activeFocus?(root.systemTheme?root.palette.highlight:"#80ffffff"):"transparent"}
          Image {anchors.horizontalCenter:parent.horizontalCenter;y:8*root.uiScale;width:76*root.uiScale;height:76*root.uiScale;source:modelData.icon;sourceSize:Qt.size(96,96);fillMode:Image.PreserveAspectFit}
          Label {anchors.horizontalCenter:parent.horizontalCenter;y:94*root.uiScale;width:parent.width-10;text:modelData.name;color:root.foreground;font.pixelSize:17*root.uiScale;horizontalAlignment:Text.AlignHCenter;elide:Text.ElideRight;maximumLineCount:2;wrapMode:Text.Wrap}
-         AmberMenu {id:gridPinMenu;popupType:Popup.Window;MenuItem{text:"在 Dock 中驻留";onTriggered:catalog.pin(modelData.row)}}
+         AmberMenu {id:gridPinMenu;popupType:Popup.Window;AmberMenuItem{text:"在 Dock 中驻留";onTriggered:catalog.pin(modelData.row)}}
          MouseArea {id:mouse;anchors.fill:parent;hoverEnabled:true;acceptedButtons:Qt.LeftButton|Qt.RightButton;onClicked:function(event){grid.currentIndex=modelData.row;if(event.button===Qt.RightButton)gridPinMenu.popup();else catalog.launch(modelData.row)}}
         }
        }
@@ -207,7 +245,7 @@ ApplicationWindow {
   }
  }
  Label {id:footer;visible:root.appLaunchMode;anchors.bottom:parent.bottom;anchors.bottomMargin:28;anchors.horizontalCenter:parent.horizontalCenter;text:root.notice.length?root.notice:"左右拖动翻页     方向键 选择     Enter 打开     Esc 返回 Menu";color:root.secondary;font.pixelSize:16}
- Shortcut {sequence:"Escape";onActivated:{if(catalog.query.length){search.clear();menuSearch.clear()}else if(root.appLaunchMode){root.appLaunchMode=false}else root.hide()}}
+ Shortcut {sequence:"Escape";onActivated:{if(sessionDialog.opened){sessionDialog.close()}else if(profileDialog.opened){profileDialog.close()}else if(catalog.query.length){search.clear();menuSearch.clear()}else if(root.appLaunchMode){root.appLaunchMode=false}else root.hide()}}
 
  Shortcut {sequence:"F11";onActivated:{root.appLaunchMode=!root.appLaunchMode;if(root.appLaunchMode)search.forceActiveFocus()}}
  Shortcut {sequence:"Ctrl+F";onActivated:root.appLaunchMode?search.forceActiveFocus():menuSearch.forceActiveFocus()}
@@ -217,4 +255,44 @@ ApplicationWindow {
  Shortcut {sequence:"Ctrl+Right";onActivated:{pages.currentIndex=Math.min(pages.count-1,pages.currentIndex+1);grid.currentIndex=pages.currentIndex*grid.pageSize}}
  Shortcut {sequence:"Ctrl+Left";onActivated:{pages.currentIndex=Math.max(0,pages.currentIndex-1);grid.currentIndex=pages.currentIndex*grid.pageSize}}
  Connections {target:catalog;function onFailure(message){root.notice=message}}
+
+    Dialog {
+        id: sessionDialog
+        objectName: "sessionConfirmation"
+        property string actionKey: ""
+        property string detail: ""
+        width: Math.min(420, root.width - 24)
+        modal: true; popupType: Popup.Window
+        anchors.centerIn:Overlay.overlay
+        title: "会话操作"
+        standardButtons: Dialog.Ok | Dialog.Cancel
+        palette.window: root.menuBackground
+        palette.text: root.foreground
+        palette.windowText: root.foreground
+        palette.buttonText: root.foreground
+        palette.button: root.menuHover
+        palette.highlight: root.menuSelection
+        background: Rectangle {color:root.menuBackground;border.color:root.menuBorder;radius:6}
+        contentItem: Label {text:sessionDialog.detail;color:root.foreground;wrapMode:Text.Wrap;font.pixelSize:14;lineHeight:1.3}
+        onOpened: {standardButton(Dialog.Ok).text=actionKey==="poweroff"?"关闭主机":actionKey==="reboot"?"重启主机":actionKey==="login"?"退出并重新登录":"注销";standardButton(Dialog.Cancel).text="取消";standardButton(Dialog.Cancel).forceActiveFocus()}
+        onAccepted: sessionActions.confirm(actionKey)
+        onClosed: sessionActions.cancel()
+    }
+    Dialog {
+        id: profileDialog
+        objectName: "userInformation"
+        width:Math.min(420,root.width-24);modal:true;popupType:Popup.Window
+        anchors.centerIn:Overlay.overlay
+        title:"当前用户";standardButtons:Dialog.Close
+        palette.window:root.menuBackground;palette.text:root.foreground;palette.windowText:root.foreground;palette.buttonText:root.foreground;palette.button:root.menuHover
+        background:Rectangle {color:root.menuBackground;border.color:root.menuBorder;radius:6}
+        contentItem:Label {text:sessionActions.displayName+"\n账号："+sessionActions.userName+"\n"+sessionActions.sessionLabel;color:root.foreground;wrapMode:Text.Wrap;font.pixelSize:14;lineHeight:1.4}
+        onOpened:standardButton(Dialog.Close).text="关闭"
+    }
+    Connections {
+        target:sessionActions
+        function onConfirmationRequested(key,title,detail){sessionDialog.actionKey=key;sessionDialog.title=title;sessionDialog.detail=detail;sessionDialog.open()}
+        function onFailure(text){root.notice=text}
+        function onSucceeded(key){root.hide()}
+    }
 }
