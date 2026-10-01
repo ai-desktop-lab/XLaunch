@@ -16,7 +16,8 @@ Homepage: https://github.com/ai-workspace-lab/XLaunch
 Package: xlaunch
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, libglib2.0-bin
-Recommends: xdock, icewm, xfce4-terminal, thunar, chromium | firefox-esr
+Recommends: xfce4-terminal, thunar, chromium | firefox-esr
+Suggests: xdock, icewm
 Description: compact AI Workspace application launcher
  XLaunch provides a small X11 desktop menu and a full-screen application
  launcher. On Linux it discovers freedesktop .desktop entries, uses the
