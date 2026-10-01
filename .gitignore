@@ -56,3 +56,6 @@ scripts/__pycache__/
 
 # local MCP debug secrets (contains a real PAT) — never commit
 config/mcp/local-mcp.env
+
+# Native Linux launcher build
+/launcher/build-linux/
